@@ -1,22 +1,20 @@
 <?php
 namespace App\Http\Controllers;
 use JWTAuth;
-use App\Models\User;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\RegistrationFormRequest;
 
 
-class AuthController extends Controller
+class AdminController extends Controller
 {
     public $loginAfterSignUp = true;
   public function login(Request $request)
-   {
-    //    dd($request->all());
+   {        //dd($request->all()); 
        $input = $request->only('email', 'password');
        $token = null;
-       
-       if (!$token = auth('api')->attempt($input)) {
+       if (!$token = auth('admin')->attempt($input)) {
         return response()->json([
             'success' => false,
             'message' => 'Invalid Email or Password',
@@ -24,21 +22,22 @@ class AuthController extends Controller
     }
     return response()->json([
         'success' => true,
-        'message' => 'Logged in successfully',
         'token' => $token,
     ]);
 }
 public function logout(Request $request)
 {
    
+       auth('admin')->logout();
+   
 }
 public function register(Request $request)
    {
-       $user = new User();
-       $user->name = $request->name;
-       $user->email = $request->email;
-       $user->password = bcrypt($request->password);
-       $user->save();
+       $admin = new Admin();
+       $admin->name = $request->name;
+       $admin->email = $request->email;
+       $admin->password = bcrypt($request->password);
+       $admin->save();
 
        if ($this->loginAfterSignUp) {
            return $this->login($request);
@@ -46,7 +45,7 @@ public function register(Request $request)
 
        return response()->json([
            'success'   =>  true,
-           'data'      =>  $user
+           'data'      =>  $admin
        ], 200);
    }
 }

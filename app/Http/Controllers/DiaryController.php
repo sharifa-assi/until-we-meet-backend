@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Models\Blog;
-
-
+use App\Models\Diary;
 use File;
 
-class BlogController extends Controller
+class DiaryController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -19,14 +16,14 @@ class BlogController extends Controller
     public function index()
     {
         try{
-            $blogs = Blog::with('category')->orderBy('name', 'ASC')->get();
-            if($blogs){
+            $diaries = Diary::with('user')->orderBy('created_at', 'ASC')->get();
+            if($diaries){
                 return response()->json([
-                    'data'=> $blogs
+                    'data'=> $diaries
                 ],200);
             }
             return response()->json([
-                'blog'=>"empty"
+                'diary'=>"empty"
             ],404);
         }
         catch(\Exception $e){
@@ -54,26 +51,29 @@ class BlogController extends Controller
      */
     public function store(Request $request)
     {
-        $blog = new Blog();
-        $blog->fill($request->all());//because we used fillable
+
+
+       // var_dump($request);
+        $diary = new Diary();
+        $diary->fill($request->all());//because we used fillable
+        $diary->user_id = auth('api')->id();
         if($image=$request->file('image'))
         {
           $image=$request->image;
-            $image->store('public/images/'. $request->category_id);
-            $blog->image = $image->hashName();
+            $image->store('public/images/'. auth('api')->id());
+            $diary->image = $image->hashName();
         }
-        if($blog->save()){ //returns a boolean
+        if($diary->save()){ //returns a boolean
             return response()->json([
-                'data'=> $blog
+                'data'=> $diary
             ],200);
         }
         else
         {
             return response()->json([
-                'blog'=>'blog could not be added' 
+                'diary'=>'diary could not be added' 
             ],500);
         }
-
     }
 
     /**
@@ -84,15 +84,15 @@ class BlogController extends Controller
      */
     public function show($id)
     {
-        $blog = Blog::find($id);
-        if($blog)
+        $diary = Diary::find($id);
+        if($diary)
         {
             return response()->json([
-                'data'=> $blog
+                'data'=> $diary
             ],200);
         }
         return response()->json([
-            'blog'=>'blog could not be found' 
+            'diary'=>'diary could not be found' 
         ],500);
     }
 
@@ -116,41 +116,41 @@ class BlogController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $blog = Blog::find($id);
-        if($blog){
-            $blog->update($request->all());//because we used fillable
+        $diary = Diary::find($id);
+        if($diary){
+            $diary->update($request->all());//because we used fillable
             if($image=$request->file('image'))
             {
                 
-                if($this->imageDelete($blog->image,$blog->category_id)){
+                if($this->imageDelete($diary->image,$diary->user_id)){
                     
                     $image=$request->image;
-                    $cat =  is_null($request->category_id)? $blog->category_id: $request->category_id;
-                    $image->store('public/images/'. $cat);                    
-                    $blog->image = $image->hashName();
+                    $user =  is_null($request->user_id)? $diary->user_id: $request->user_id;
+                    $image->store('public/images/'. $user);                    
+                    $diary->image = $image->hashName();
                 }
                 else
                 {
                     $image=$request->image;
-                    $cat =  is_null($request->category_id)? $blog->category_id: $request->category_id;                   
-                    $image->store('public/images/'. $cat);                    
-                    $blog->image = $image->hashName();
+                    $user =  is_null($request->user_id)? $diary->user_id: $request->user_id;                   
+                    $image->store('public/images/'. $user);                    
+                    $diary->image = $image->hashName();
                 }               
             }
-            if($blog->save()){ //returns a boolean
+            if($diary->save()){ //returns a boolean
                 return response()->json([
-                    'data'=> $blog
+                    'data'=> $diary
                 ],200);
             }
             else
             {
                 return response()->json([
-                    'blog'=>'blog could not be updated' 
+                    'diary'=>'diary could not be updated' 
                 ],500);
             }
         }
         return response()->json([
-            'blog'=>'blog could not be found' 
+            'diary'=>'diary could not be found' 
         ],500);
     }
 
@@ -162,9 +162,9 @@ class BlogController extends Controller
      */
     public function destroy($id)
     {
-        $blog = Blog::find($id);
-        if($blog->delete()){ //returns a boolean
-            if($this->imageDelete($blog->image,$blog->category_id)){
+        $diary = Diary::find($id);
+        if($diary->delete()){ //returns a boolean
+            if($this->imageDelete($diary->image,$diary->user_id)){
                 var_dump('got deleted');
             }
             else
@@ -172,21 +172,21 @@ class BlogController extends Controller
                 var_dump('didnt delete');
             }
             return response()->json([
-                'blog'=> "good for you"
+                'diary'=> "good for you"
             ],200);
         }
         else
         {
             return response()->json([
-                'blog'=>'blog could not be deleted' 
+                'diary'=>'diary could not be deleted' 
             ],500);
         }
     }
-    public function imageDelete($oldImage, $cat_id)
+    public function imageDelete($oldImage, $user_id)
     {
-        if(File::exists(public_path('storage/images/'. $cat_id .'/'. $oldImage)))
+        if(File::exists(public_path('storage/images/'. $user_id .'/'. $oldImage)))
         {
-            File::delete(public_path('storage/images/'. $cat_id . '/' . $oldImage));
+            File::delete(public_path('storage/images/'. $user_id . '/' . $oldImage));
             return true;
         }
         else
@@ -194,10 +194,4 @@ class BlogController extends Controller
             return false;
         }
     }
-    public function calculation(Request $request,$id)
-    { 
-      
-
-}
-
 }
